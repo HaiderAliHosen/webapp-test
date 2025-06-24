@@ -19,7 +19,8 @@ export default defineConfig({
       'react-dom',
       'react-router-dom',
       'date-fns',
-      'axios'
+      'axios',
+      'jwt-decode'
     ]
   },
   server: {
