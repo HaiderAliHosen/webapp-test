@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../interceptors/api';
-import { getCurrentUserId, getAuthToken } from '../utils/auth';
+import { getAuthToken } from '../utils/auth';
 import { MurmurCard } from '../components/MurmurCard';
 import { Pagination } from '../components/Pagination';
 import { CreateMurmur } from '../components/CreateMurmur';
 import { Murmur } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 export function Timeline() {
   const [murmurs, setMurmurs] = useState<Murmur[]>([]);
@@ -12,74 +13,84 @@ export function Timeline() {
   const [totalPages, setTotalPages] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    async function fetchMurmurs() {
-      try {
-        setIsRefreshing(true);
-        const currentUserId = getCurrentUserId();
-        console.log(currentUserId, getAuthToken());
-        const response = await api.get(`/api/murmurs?page=${page}`, {
-          headers: {
-            Authorization: `Bearer ${getAuthToken()}`,
-          }
-        });
-        
-        const responseData = response.data;
-        const murmursData = Array.isArray(responseData) ? responseData : responseData.items || [];
-        
-        // Ensure each murmur has proper like data
-        const processedMurmurs = murmursData.map(murmur => ({
-          ...murmur,
-          isLiked: murmur.isLiked || false, // Fallback to false if undefined
-          likeCount: murmur.likeCount || murmur.likes?.length || 0 // Multiple fallbacks
-        }));
+  const fetchMurmurs = useCallback(async () => {
+    try {
+      setIsRefreshing(true);
+      const response = await api.get(`/api/murmurs?page=${page}`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        }
+      });
 
-        setMurmurs(processedMurmurs);
-        setTotalPages(responseData.totalPages || 1);
-      } catch (error) {
-        console.error('Error fetching murmurs:', error);
-        setMurmurs([]);
-      } finally {
-        setIsRefreshing(false);
-      }
+      const responseData = response.data;
+      const murmursData = Array.isArray(responseData)
+        ? responseData
+        : responseData.items || [];
+
+      const processedMurmurs = murmursData.map(murmur => ({
+        ...murmur,
+        isLiked: murmur.isLiked || false,
+        likeCount: murmur.likeCount || murmur.likes?.length || 0,
+      }));
+
+      setMurmurs(processedMurmurs);
+      setTotalPages(responseData.totalPages || 1);
+    } catch (error) {
+      console.error('Error fetching murmurs:', error);
+      setMurmurs([]);
+    } finally {
+      setIsRefreshing(false);
     }
-    fetchMurmurs();
   }, [page]);
+
+  useEffect(() => {
+    fetchMurmurs();
+  }, [fetchMurmurs]);
 
   const handleLike = async (murmurId: number) => {
     try {
-      // Optimistic update
-      setMurmurs(prev => prev.map(murmur => {
-        if (murmur.id === murmurId) {
-          return {
-            ...murmur,
-            isLiked: !murmur.isLiked,
-            likeCount: murmur.isLiked ? murmur.likeCount - 1 : murmur.likeCount + 1
-          };
-        }
-        return murmur;
-      }));
+      setMurmurs(prev =>
+        prev.map(murmur =>
+          murmur.id === murmurId
+            ? {
+                ...murmur,
+                isLiked: !murmur.isLiked,
+                likeCount: murmur.isLiked
+                  ? murmur.likeCount - 1
+                  : murmur.likeCount + 1,
+              }
+            : murmur
+        )
+      );
 
-      // Call API
       const response = await api.post(`/api/murmurs/${murmurId}/like`);
-      
-      // Update with server response if needed
+
       if (response.data) {
-        setMurmurs(prev => prev.map(m => 
-          m.id === murmurId ? response.data : m
-        ));
+        setMurmurs(prev =>
+          prev.map(m => (m.id === murmurId ? response.data : m))
+        );
       }
     } catch (error) {
       console.error('Error handling like:', error);
-      // Revert optimistic update on error
-      setMurmurs(prev => [...prev]);
+      setMurmurs(prev => [...prev]); // revert fallback
     }
+  };
+
+  const handleCreated = async () => {
+    setPage(1);
+    await fetchMurmurs();
+  };
+
+  const navigate = useNavigate(); // <-- initialize navigate
+
+  const handleUsernameClick = (userId: number | string) => {
+    navigate(`/users/${userId}`);
   };
 
   return (
     <div className="max-w-2xl mx-auto py-4">
-      <CreateMurmur onCreated={() => setPage(1)} />
-      
+      <CreateMurmur onCreated={handleCreated} />
+
       {isRefreshing ? (
         <div className="text-center py-8">Loading...</div>
       ) : (
@@ -87,10 +98,11 @@ export function Timeline() {
           <div className="space-y-4">
             {murmurs?.length > 0 ? (
               murmurs.map(murmur => (
-                <MurmurCard 
-                  key={murmur.id} 
-                  murmur={murmur} 
-                  onLike={handleLike} 
+                <MurmurCard
+                  key={murmur.id}
+                  murmur={murmur}
+                  onLike={handleLike}
+                  onUsernameClick={handleUsernameClick}
                 />
               ))
             ) : (
@@ -98,10 +110,10 @@ export function Timeline() {
             )}
           </div>
           {totalPages > 1 && (
-            <Pagination 
-              current={page} 
-              onChange={setPage} 
-              totalPages={totalPages} 
+            <Pagination
+              current={page}
+              onChange={setPage}
+              totalPages={totalPages}
             />
           )}
         </>

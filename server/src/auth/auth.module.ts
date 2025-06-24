@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
+import { FollowModule } from '../follow/follow.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthController } from './auth.controller';
     }),
     TypeOrmModule.forFeature([User]),
     UsersModule,
+    FollowModule,
   ],
   controllers: [AuthController], // Make sure controller is registered here
   providers: [AuthService, JwtStrategy],

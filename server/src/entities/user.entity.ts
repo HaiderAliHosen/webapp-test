@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn } from 'typeorm';
 import { Murmur } from './murmur.entity';
 import { Like } from './like.entity';
 import { Follow } from './follow.entity';
@@ -39,8 +39,10 @@ export class User {
   updated_at: Date;
 
   @OneToMany(() => Follow, follow => follow.follower)
+  @JoinColumn({ name: 'follower_id' }) // Explicit join column
   followers: Follow[];
 
   @OneToMany(() => Follow, follow => follow.following)
+  @JoinColumn({ name: 'following_id' }) // Explicit join column
   following: Follow[];
 }

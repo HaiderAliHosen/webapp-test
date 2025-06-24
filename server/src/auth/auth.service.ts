@@ -4,12 +4,14 @@ import { User } from '../entities/user.entity';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from '../dto/register.dto';
+import { FollowService } from 'src/follow/follow.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private followService: FollowService,
   ) {}
 
   async validateUser(username: string, password: string): Promise<any> {
@@ -79,8 +81,22 @@ export class AuthService {
   }
 
     async getProfile(userId: number) {
-        return this.usersService.findById(userId, {
-            select: ['id', 'username', 'email', 'name', 'avatar_url']
-        });
+    // Get the user with specific fields
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      return null;
     }
+
+    // Count followers and following
+    const followersCount = await this.followService.countFollowers(userId);
+
+    const followingCount = await this.followService.countFollowing(userId);
+
+    return {
+      ...user,
+      followersCount,
+      followingCount,
+    };
+  }
 }
