@@ -110,7 +110,7 @@ The ability to build a development environment is also the subject of this test,
 1. npm run start:dev
 
 #### Client
-1. cd src && yarn install
+1. cd src && yarn install or yarn set version berry yarn install
 1. yarn dev
 
 

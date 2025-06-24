@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   test:
     image: mysql:8.0
@@ -10,12 +12,18 @@ services:
       TZ: Asia/Tokyo
     restart: always
     volumes:
-      - ./init_db:/docker-entrypoint-initdb.d
-      - ./conf/my.cnf:/etc/mysql/conf.d/my.cnf
-      - ./data:/var/lib/mysql
+      - ./init_db:/docker-entrypoint-initdb.d:z  # Added :z for SELinux or :rw for permissions
+      - ./conf/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - mysql_data:/var/lib/mysql  # Changed to named volume for better permission handling
     ports:
       - 3306:3306
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     security_opt:
       - seccomp:unconfined
+
 volumes:
-  data:
+  mysql_data:  # Named volume for persistent data
