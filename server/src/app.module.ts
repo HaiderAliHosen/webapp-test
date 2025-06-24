@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Murmur } from './entities/murmur.entity';
@@ -7,6 +7,7 @@ import { Follow } from './entities/follow.entity';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { MurmursModule } from './murmurs/murmurs.module';
+import { JwtMiddleware } from './auth/middleware/jwt.middleware';
 
 @Module({
   imports: [
@@ -25,4 +26,10 @@ import { MurmursModule } from './murmurs/murmurs.module';
     MurmursModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(JwtMiddleware)
+      .forRoutes('*'); // Apply to all routes or specify specific ones
+  }
+}
