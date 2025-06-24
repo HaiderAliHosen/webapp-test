@@ -6,6 +6,8 @@ export type User = {
   avatar_url?: string | null;
   bio?: string | null;
   created_at: string | Date;
+  followersCount: number;
+  followingCount: number;
 };
 
 export type Murmur = {

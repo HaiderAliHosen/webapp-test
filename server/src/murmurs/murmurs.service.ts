@@ -65,9 +65,13 @@ export class MurmursService {
   }
 
   async delete(murmurId: number, userId: number) {
+    // First delete all likes associated with this murmur
+    await this.likesRepository.delete({ murmur_id: murmurId });
+    
+    // Then delete the murmur
     const murmur = await this.murmursRepository.findOne({
       where: { id: murmurId },
-      relations: ['user'],
+      relations: ['user']
     });
 
     if (!murmur) {
