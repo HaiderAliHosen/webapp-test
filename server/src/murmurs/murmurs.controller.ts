@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, Request, UseGuards } from "@nestjs/common";
 import { PaginationDto } from "../dto/pagination.dto";
 import { MurmursService } from "./murmurs.service";
 import { CreateMurmurDto } from "../dto/create-murmur.dto";
@@ -9,11 +9,19 @@ export class MurmursController {
   constructor(private murmursService: MurmursService) {}
 
   @Get()
-  async getTimeline(@Query() pagination: PaginationDto) {
+  async getTimeline(
+    @Query() pagination: PaginationDto,
+    @Request() req  // Get the request to access user info
+  ) {
+    const currentUserId = req.user.sub;  // Assuming you're using authentication middleware
     const murmurs = await this.murmursService.getTimeline(pagination);
+    
     return murmurs.map(murmur => ({
       ...murmur,
-      likeCount: murmur.likes?.length || 4,
+      likeCount: murmur.likes?.length || 0,
+      isLiked: currentUserId 
+        ? murmur.likes?.some(like => like.user_id === currentUserId) 
+        : false
     }));
   }
 
