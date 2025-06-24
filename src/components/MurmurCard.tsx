@@ -9,15 +9,17 @@ type Props = {
 
 export function MurmurCard({ murmur, onLike }: Props) {
   const [isLiking, setIsLiking] = useState(false);
-  const [likeCount, setLikeCount] = useState(murmur.likes?.length || 0);
-  const [isLiked, setIsLiked] = useState(false); // You'd get this from the API
+  
+  // Ensure we have valid numbers and booleans
+  const likeCount = murmur.likes?.length || 0;
+  const isLiked = murmur.isLiked ?? false;
 
   const handleLike = async () => {
+    if (isLiking) return;
+    
     setIsLiking(true);
     try {
       await onLike(murmur.id);
-      setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
-      setIsLiked(prev => !prev);
     } catch (error) {
       console.error('Error liking murmur:', error);
     } finally {
@@ -38,15 +40,15 @@ export function MurmurCard({ murmur, onLike }: Props) {
             <span className="font-semibold">{murmur.user?.name}</span>
             <span className="text-gray-500">@{murmur.user?.username}</span>
             <span className="text-gray-400 text-sm">
-              {formatDistanceToNow(new Date(murmur?.created_at))} ago
+              {formatDistanceToNow(new Date(murmur.created_at))} ago
             </span>
           </div>
-          <p className="mt-1 mb-2">{murmur?.content}</p>
+          <p className="mt-1 mb-2">{murmur.content}</p>
           <div className="flex items-center space-x-4 text-gray-500">
             <button 
               onClick={handleLike}
               disabled={isLiking}
-              className={`flex items-center space-x-1 ${isLiked ? 'text-red-500' : ''}`}
+              className={`flex items-center space-x-1 ${isLiked ? 'text-red-500' : 'hover:text-red-400'}`}
             >
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 

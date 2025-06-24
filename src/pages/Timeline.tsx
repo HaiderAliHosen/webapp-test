@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-// import axios from 'axios';
 import api from '../interceptors/api';
-
+import { getCurrentUserId, getAuthToken } from '../utils/auth';
 import { MurmurCard } from '../components/MurmurCard';
 import { Pagination } from '../components/Pagination';
 import { CreateMurmur } from '../components/CreateMurmur';
@@ -17,16 +16,29 @@ export function Timeline() {
     async function fetchMurmurs() {
       try {
         setIsRefreshing(true);
-        const response = await api.get(`/api/murmurs?page=${page}`);
-        // Check if response.data is an array (direct return) or has items property
-        const murmursData = Array.isArray(response.data) ? response.data : response.data.items;
-        setMurmurs(murmursData || []); // Fallback to empty array if undefined
+        const currentUserId = getCurrentUserId();
+        console.log(currentUserId, getAuthToken());
+        const response = await api.get(`/api/murmurs?page=${page}`, {
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+          }
+        });
         
-        // Similarly handle totalPages
-        setTotalPages(response.data.totalPages || 1);
+        const responseData = response.data;
+        const murmursData = Array.isArray(responseData) ? responseData : responseData.items || [];
+        
+        // Ensure each murmur has proper like data
+        const processedMurmurs = murmursData.map(murmur => ({
+          ...murmur,
+          isLiked: murmur.isLiked || false, // Fallback to false if undefined
+          likeCount: murmur.likeCount || murmur.likes?.length || 0 // Multiple fallbacks
+        }));
+
+        setMurmurs(processedMurmurs);
+        setTotalPages(responseData.totalPages || 1);
       } catch (error) {
         console.error('Error fetching murmurs:', error);
-        setMurmurs([]); // Ensure we always have an array
+        setMurmurs([]);
       } finally {
         setIsRefreshing(false);
       }
@@ -36,32 +48,26 @@ export function Timeline() {
 
   const handleLike = async (murmurId: number) => {
     try {
-      // First check if already liked locally to decide which endpoint to call
-      const murmur = murmurs.find(m => m.id === murmurId);
-      if (!murmur) return;
-
-      const currentUserId = 1; // Replace with actual current user ID from your auth context
-      const isLiked = murmur.likes.some(like => like.user_id === currentUserId);
-
       // Optimistic update
-      setMurmurs(prev => prev.map(m => {
-        if (m.id === murmurId) {
+      setMurmurs(prev => prev.map(murmur => {
+        if (murmur.id === murmurId) {
           return {
-            ...m,
-            likes: isLiked 
-              ? m.likes.filter(like => like.user_id !== currentUserId)
-              : [...m.likes, { user_id: currentUserId }],
-            likeCount: isLiked ? m.likeCount - 1 : m.likeCount + 1
+            ...murmur,
+            isLiked: !murmur.isLiked,
+            likeCount: murmur.isLiked ? murmur.likeCount - 1 : murmur.likeCount + 1
           };
         }
-        return m;
+        return murmur;
       }));
 
-      // Call appropriate endpoint based on current like status
-      if (isLiked) {
-        await api.delete(`/api/murmurs/${murmurId}/like`);
-      } else {
-        await api.post(`/api/murmurs/${murmurId}/like`);
+      // Call API
+      const response = await api.post(`/api/murmurs/${murmurId}/like`);
+      
+      // Update with server response if needed
+      if (response.data) {
+        setMurmurs(prev => prev.map(m => 
+          m.id === murmurId ? response.data : m
+        ));
       }
     } catch (error) {
       console.error('Error handling like:', error);
