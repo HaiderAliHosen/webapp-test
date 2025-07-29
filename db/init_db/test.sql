@@ -1,3 +1,8 @@
+-- Add these at the beginning of your file
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS users, murmurs, follows, likes, test;
+SET FOREIGN_KEY_CHECKS = 1;
+
 CREATE TABLE test (
   id int NOT NULL AUTO_INCREMENT primary key,
   name varchar(30),
@@ -61,10 +66,15 @@ CREATE TABLE IF NOT EXISTS likes (
   INDEX idx_murmur_id (murmur_id) -- Improves query performance
 );
 
--- Sample data (optional for testing)
+-- Modify users table to explicitly handle empty strings
+ALTER TABLE users 
+MODIFY username VARCHAR(50) NOT NULL DEFAULT UUID(),
+MODIFY email VARCHAR(100) NOT NULL DEFAULT CONCAT(UUID(), '@example.com');
+
+-- Add proper initial data that respects constraints
 INSERT INTO users (username, email, password, name, bio) VALUES 
-('user1', 'user1@example.com', '$2a$10$x...', 'User One', 'First test user'),
-('user2', 'user2@example.com', '$2a$10$x...', 'User Two', 'Second test user');
+('user1', 'user1@real.com', '$2a$10$x...', 'User One', 'First test user'),
+('user2', 'user2@real.com', '$2a$10$x...', 'User Two', 'Second test user');
 
 INSERT INTO murmurs (user_id, content) VALUES
 (1, 'This is my first murmur!'),
