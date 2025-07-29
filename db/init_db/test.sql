@@ -1,4 +1,3 @@
--- Add these at the beginning of your file
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS users, murmurs, follows, likes, test;
 SET FOREIGN_KEY_CHECKS = 1;
@@ -71,7 +70,7 @@ ALTER TABLE users
 MODIFY username VARCHAR(50) NOT NULL DEFAULT UUID(),
 MODIFY email VARCHAR(100) NOT NULL DEFAULT CONCAT(UUID(), '@example.com');
 
--- Add proper initial data that respects constraints
+-- initial data that respects constraints
 INSERT INTO users (username, email, password, name, bio) VALUES 
 ('user1', 'user1@real.com', '$2a$10$x...', 'User One', 'First test user'),
 ('user2', 'user2@real.com', '$2a$10$x...', 'User Two', 'Second test user');
